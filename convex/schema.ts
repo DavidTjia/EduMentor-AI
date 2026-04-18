@@ -15,6 +15,8 @@ export default defineSchema({
     current_step: v.number(),
     current_topic: v.string(),
 
+    weak_topics: v.optional(v.array(v.string())),
+
     created_at: v.number(),
   })
     .index("by_email", ["email"])

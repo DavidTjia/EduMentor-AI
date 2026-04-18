@@ -80,9 +80,10 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabIcon: {
+    width: 38,
+    height: 38,
     alignItems: "center",
     justifyContent: "center",
-    padding: 6,
     borderRadius: Radius.md,
   },
   tabIconActive: {

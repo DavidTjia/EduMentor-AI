@@ -6,7 +6,7 @@ import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
 const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
 
 async function callGemini(prompt: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -23,7 +23,7 @@ async function callGemini(prompt: string): Promise<string> {
   if (!res.ok) {
     const err = await res.text();
     let msg = `Gemini API error: ${res.statusText}. ${err}`;
-    if (res.status === 429) msg = "AI quota exceeded. Please wait a minute and try again.";
+    if (res.status === 429) msg = `AI quota exceeded: ${err}`;
     throw new ConvexError(msg);
   }
 
