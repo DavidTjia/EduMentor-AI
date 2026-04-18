@@ -1,53 +1,68 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * EduMentor AI Design System
+ * Color palette, typography, spacing, and radius tokens.
  */
 
-import { Platform } from 'react-native';
+export const AppColors = {
+  primary: '#6C63FF',       // violet
+  primaryDark: '#4B44CC',
+  primaryLight: '#EAE8FF',
+  accent: '#4ECDC4',        // teal
+  accentLight: '#E0FAF8',
+  success: '#52C97A',
+  warning: '#FFB347',
+  danger: '#FF6B6B',
+  background: '#F0F2FF',
+  surface: '#FFFFFF',
+  card: '#FFFFFF',
+  border: '#E8EAFF',
+  text: '#1A1A2E',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  tabBar: '#FFFFFF',
+  overlay: 'rgba(108,99,255,0.08)',
+};
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+export const AppSpacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+};
 
+export const Radius = {
+  sm: 8,
+  md: 14,
+  lg: 20,
+  xl: 28,
+  full: 999,
+};
+
+export const AppFonts = {
+  regular: 'System',
+  medium: 'System',
+  semiBold: 'System',
+  bold: 'System',
+};
+
+/** Legacy Colors kept for existing component compatibility */
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: AppColors.text,
+    background: AppColors.background,
+    tint: AppColors.primary,
+    icon: AppColors.textSecondary,
+    tabIconDefault: AppColors.textMuted,
+    tabIconSelected: AppColors.primary,
   },
   dark: {
     text: '#ECEDEE',
     background: '#151718',
-    tint: tintColorDark,
+    tint: '#fff',
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    tabIconSelected: '#fff',
   },
 };
-
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  },
-});
