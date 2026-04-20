@@ -17,6 +17,14 @@ export default defineSchema({
 
     weak_topics: v.optional(v.array(v.string())),
 
+    // 📱 TELEGRAM AI COACH
+    telegram_enabled: v.optional(v.boolean()),
+    telegram_chat_id: v.optional(v.string()),
+    telegram_token: v.optional(v.string()),        // OTP sinkronisasi sementara
+    telegram_waiting_reply: v.optional(v.boolean()), // True = AI menunggu jawaban user
+    last_notified_at: v.optional(v.number()),       // Kapan AI terakhir kirim pesan
+    last_app_login: v.optional(v.number()),         // Kapan user terakhir buka app
+
     created_at: v.number(),
   })
     .index("by_email", ["email"])

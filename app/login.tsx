@@ -26,6 +26,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   const doLogin = useMutation(api.users.loginUser);
+  const doRecordLogin = useMutation(api.users.recordAppLogin);
 
   const handleLogin = async () => {
     if (!emailOrUsername.trim() || !password.trim()) {
@@ -46,7 +47,10 @@ export default function LoginScreen() {
       }
 
       await AsyncStorage.setItem("edumentor_user_id", user._id);
-      
+
+      // Record login — stops Telegram reminder loop
+      try { await doRecordLogin({ userId: user._id }); } catch { /* non-critical */ }
+
       // If they haven't generated a plan yet, kick them to onboarding
       if (!user.current_topic) {
         router.replace("/onboarding");

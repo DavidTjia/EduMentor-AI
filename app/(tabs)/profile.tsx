@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Switch,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
@@ -17,6 +19,8 @@ import { AppColors, AppSpacing, Radius } from "@/constants/theme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Id } from "@/convex/_generated/dataModel";
 import { LinearGradient } from "expo-linear-gradient";
+
+const TELEGRAM_BOT_USERNAME = "Elvyd_bot";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -40,6 +44,10 @@ export default function ProfileScreen() {
   );
 
   const resetProgress = useMutation(api.users.resetUserProgress);
+  const updateTelegram = useMutation(api.users.updateTelegramSettings);
+  const generateToken = useMutation(api.users.generateSyncToken);
+
+  const [telegramLoading, setTelegramLoading] = useState(false);
 
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -71,6 +79,77 @@ export default function ProfileScreen() {
             await resetProgress({ userId });
             await AsyncStorage.removeItem("edumentor_level");
             router.replace("/onboarding");
+          },
+        },
+      ]
+    );
+  };
+
+  const handleToggleTelegram = async (value: boolean) => {
+    if (!userId) return;
+    setTelegramLoading(true);
+    try {
+      if (!value) {
+        // Turn off: disable and clear chat_id
+        await updateTelegram({
+          userId,
+          telegram_enabled: false,
+          telegram_chat_id: undefined,
+          telegram_token: undefined,
+          telegram_waiting_reply: false,
+        });
+      } else {
+        // Turn on: just enable, user still needs to connect
+        await updateTelegram({ userId, telegram_enabled: true });
+      }
+    } catch (e) {
+      Alert.alert("Error", "Gagal mengubah pengaturan Telegram.");
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  const handleConnectTelegram = async () => {
+    if (!userId) return;
+    setTelegramLoading(true);
+    try {
+      const token = await generateToken({ userId });
+      const url = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${token}`;
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(
+          "Buka Telegram",
+          `Salin kode ini dan kirim ke @${TELEGRAM_BOT_USERNAME}:\n\n/start ${token}`,
+          [{ text: "OK" }]
+        );
+      }
+    } catch (e) {
+      Alert.alert("Error", "Gagal membuat token sinkronisasi.");
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  const handleDisconnectTelegram = () => {
+    Alert.alert(
+      "Putuskan Telegram",
+      "Bot tidak akan lagi mengirim notifikasi ke Telegram kamu. Yakin?",
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Putuskan",
+          style: "destructive",
+          onPress: async () => {
+            if (!userId) return;
+            await updateTelegram({
+              userId,
+              telegram_enabled: false,
+              telegram_chat_id: undefined,
+              telegram_token: undefined,
+              telegram_waiting_reply: false,
+            });
           },
         },
       ]
@@ -188,6 +267,76 @@ export default function ProfileScreen() {
         ))}
       </Card>
 
+      {/* Telegram AI Coach */}
+      <Card style={styles.infoCard}>
+        <View style={styles.telegramHeader}>
+          <View style={styles.telegramTitleRow}>
+            <Text style={styles.telegramIcon}>✈️</Text>
+            <View>
+              <Text style={styles.cardSectionTitle}>AI TELEGRAM COACH</Text>
+              <Text style={styles.telegramSubtitle}>Terima jadwal belajar & pengingat via Telegram</Text>
+            </View>
+          </View>
+          <Switch
+            value={!!user.telegram_enabled}
+            onValueChange={handleToggleTelegram}
+            disabled={telegramLoading}
+            trackColor={{ false: AppColors.border, true: AppColors.primary }}
+            thumbColor="#fff"
+          />
+        </View>
+
+        {user.telegram_enabled && (
+          <View style={styles.telegramBody}>
+            {/* Connection Status */}
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Status:</Text>
+              {user.telegram_chat_id ? (
+                <View style={styles.connectedBadge}>
+                  <Text style={styles.connectedText}>✅ Terhubung</Text>
+                </View>
+              ) : (
+                <View style={styles.disconnectedBadge}>
+                  <Text style={styles.disconnectedText}>⚠️ Belum Terhubung</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Bot info */}
+            <Text style={styles.botInfo}>
+              Bot: <Text style={styles.botName}>@{TELEGRAM_BOT_USERNAME}</Text>
+            </Text>
+
+            {/* Action button */}
+            {!user.telegram_chat_id ? (
+              <TouchableOpacity
+                style={styles.connectBtn}
+                onPress={handleConnectTelegram}
+                disabled={telegramLoading}
+              >
+                {telegramLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.connectBtnText}>🔗 Sambungkan ke Telegram</Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.disconnectBtn}
+                onPress={handleDisconnectTelegram}
+              >
+                <Text style={styles.disconnectBtnText}>🔌 Putuskan Sambungan</Text>
+              </TouchableOpacity>
+            )}
+
+            <Text style={styles.telegramHint}>
+              💡 Setelah terhubung, kamu akan menerima jadwal belajar setiap jam 08:00 pagi.
+              Balas pesan bot untuk reschedule otomatis.
+            </Text>
+          </View>
+        )}
+      </Card>
+
       {/* Actions */}
       <View style={styles.actionsSection}>
         <GradientButton label="Logout" onPress={handleLogout} variant="outline" />
@@ -288,4 +437,55 @@ const styles = StyleSheet.create({
   appInfo: { alignItems: "center", gap: 4, paddingVertical: AppSpacing.sm },
   appInfoText: { fontSize: 13, color: AppColors.textMuted, fontWeight: "600" },
   appInfoSub: { fontSize: 11, color: AppColors.textMuted },
+
+  // Telegram Coach styles
+  telegramHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  telegramTitleRow: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  telegramIcon: { fontSize: 22 },
+  telegramSubtitle: { fontSize: 11, color: AppColors.textMuted, marginTop: 1 },
+  telegramBody: { marginTop: 14, gap: 10 },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  statusLabel: { fontSize: 13, color: AppColors.textSecondary, fontWeight: "600" },
+  connectedBadge: {
+    backgroundColor: "#E6F9EE",
+    borderRadius: Radius.full,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+  },
+  connectedText: { fontSize: 12, color: AppColors.success, fontWeight: "700" },
+  disconnectedBadge: {
+    backgroundColor: "#FFF3E0",
+    borderRadius: Radius.full,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+  },
+  disconnectedText: { fontSize: 12, color: AppColors.warning, fontWeight: "700" },
+  botInfo: { fontSize: 12, color: AppColors.textMuted },
+  botName: { color: AppColors.primary, fontWeight: "700" },
+  connectBtn: {
+    backgroundColor: AppColors.primary,
+    borderRadius: Radius.md,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  connectBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  disconnectBtn: {
+    borderWidth: 1.5,
+    borderColor: AppColors.textMuted,
+    borderRadius: Radius.md,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  disconnectBtnText: { fontSize: 14, color: AppColors.textMuted, fontWeight: "600" },
+  telegramHint: {
+    fontSize: 11,
+    color: AppColors.textMuted,
+    lineHeight: 17,
+    fontStyle: "italic",
+  },
 });

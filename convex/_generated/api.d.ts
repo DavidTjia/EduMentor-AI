@@ -9,9 +9,13 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as crons from "../crons.js";
+import type * as http from "../http.js";
 import type * as learningPlans from "../learningPlans.js";
 import type * as learningSessions from "../learningSessions.js";
 import type * as progress from "../progress.js";
+import type * as telegram from "../telegram.js";
+import type * as telegramDb from "../telegramDb.js";
 import type * as users from "../users.js";
 
 import type {
@@ -22,9 +26,13 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  crons: typeof crons;
+  http: typeof http;
   learningPlans: typeof learningPlans;
   learningSessions: typeof learningSessions;
   progress: typeof progress;
+  telegram: typeof telegram;
+  telegramDb: typeof telegramDb;
   users: typeof users;
 }>;
 
