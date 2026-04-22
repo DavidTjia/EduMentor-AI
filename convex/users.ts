@@ -1,5 +1,5 @@
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { v, ConvexError } from "convex/values";
 
 /** Register a new user */
 export const registerUser = mutation({
@@ -171,5 +171,78 @@ export const getUserByTelegramChatId = query({
       .query("users")
       .filter((q) => q.eq(q.field("telegram_chat_id"), args.chatId))
       .unique();
+  },
+});
+
+// ─── EDIT PROFILE ────────────────────────────────────────────────────────────
+
+/** Update user profile fields (username, email, profile image) */
+export const updateProfile = mutation({
+  args: {
+    userId: v.id("users"),
+    username: v.optional(v.string()),
+    email: v.optional(v.string()),
+    profile_image: v.optional(v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    const { userId, ...fields } = args;
+
+    // Check email uniqueness if email is being changed
+    if (fields.email) {
+      const existing = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", fields.email!))
+        .unique();
+      if (existing && existing._id !== userId) {
+        throw new ConvexError("Email already in use by another account");
+      }
+    }
+
+    // Check username uniqueness if username is being changed
+    if (fields.username) {
+      const existing = await ctx.db
+        .query("users")
+        .withIndex("by_username", (q) => q.eq("username", fields.username!))
+        .unique();
+      if (existing && existing._id !== userId) {
+        throw new ConvexError("Username already taken");
+      }
+    }
+
+    const patch: Record<string, unknown> = {};
+    if (fields.username !== undefined) patch.username = fields.username;
+    if (fields.email !== undefined) patch.email = fields.email;
+    if (fields.profile_image !== undefined) patch.profile_image = fields.profile_image;
+    await ctx.db.patch(userId, patch);
+  },
+});
+
+/** Generate a Convex upload URL for profile image */
+export const generateUploadUrl = mutation(async (ctx) => {
+  return await ctx.storage.generateUploadUrl();
+});
+
+/** Get the serving URL for a profile image storage ID */
+export const getProfileImageUrl = query({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
+  },
+});
+
+/** Remove profile image — deletes from storage and clears the field */
+export const removeProfileImage = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new ConvexError("User not found");
+
+    // Delete the file from Convex storage if it exists
+    if (user.profile_image) {
+      await ctx.storage.delete(user.profile_image);
+    }
+
+    // Clear the field on the user record
+    await ctx.db.patch(args.userId, { profile_image: undefined });
   },
 });

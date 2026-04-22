@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Card } from "@/components/ui/card";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { AppColors, AppSpacing, Radius } from "@/constants/theme";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery } from "convex/react";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -41,6 +41,11 @@ export default function HomeScreen() {
   const progressList = useQuery(
     api.progress.getUserProgress,
     userId ? { userId } : "skip"
+  );
+
+  const profileImageUrl = useQuery(
+    api.users.getProfileImageUrl,
+    user?.profile_image ? { storageId: user.profile_image } : "skip"
   );
 
   const completed = allPlans?.filter((p) => p.is_completed).length ?? 0;
@@ -81,7 +86,18 @@ export default function HomeScreen() {
             style={styles.avatarBtn}
             onPress={() => router.push("/(tabs)/profile")}
           >
-            <Text style={styles.avatarEmoji}>👤</Text>
+            {profileImageUrl ? (
+              <Image
+                source={{ uri: profileImageUrl as string }}
+                style={styles.avatarImg}
+                contentFit="cover"
+                transition={200}
+              />
+            ) : (
+              <Text style={styles.avatarEmoji}>
+                {user?.username?.charAt(0)?.toUpperCase() ?? "👤"}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -153,14 +169,14 @@ export default function HomeScreen() {
         onPress={() =>
           todayTopic
             ? router.push({
-                pathname: "/plan-detail",
-                params: {
-                  planId: todayTopic._id,
-                  topic: todayTopic.topic,
-                  description: todayTopic.description,
-                  estimatedTime: todayTopic.estimated_time,
-                },
-              })
+              pathname: "/plan-detail",
+              params: {
+                planId: todayTopic._id,
+                topic: todayTopic.topic,
+                description: todayTopic.description,
+                estimatedTime: todayTopic.estimated_time,
+              },
+            })
             : router.push("/ai-planning")
         }
       />
@@ -288,7 +304,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarEmoji: { fontSize: 22 },
+  avatarImg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  avatarEmoji: { fontSize: 22, color: "#fff", fontWeight: "700" },
   headerProgress: { gap: 8 },
   progressLabelRow: {
     flexDirection: "row",

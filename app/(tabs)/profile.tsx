@@ -1,24 +1,25 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Switch,
-  Linking,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Card } from "@/components/ui/card";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { AppColors, AppSpacing, Radius } from "@/constants/theme";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useMutation, useQuery } from "convex/react";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const TELEGRAM_BOT_USERNAME = "Elvyd_bot";
 
@@ -46,6 +47,11 @@ export default function ProfileScreen() {
   const resetProgress = useMutation(api.users.resetUserProgress);
   const updateTelegram = useMutation(api.users.updateTelegramSettings);
   const generateToken = useMutation(api.users.generateSyncToken);
+
+  const profileImageUrl = useQuery(
+    api.users.getProfileImageUrl,
+    user?.profile_image ? { storageId: user.profile_image } : "skip"
+  );
 
   const [telegramLoading, setTelegramLoading] = useState(false);
 
@@ -181,11 +187,20 @@ export default function ProfileScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user.username.charAt(0).toUpperCase()}
-          </Text>
-        </View>
+        {profileImageUrl ? (
+          <Image
+            source={{ uri: profileImageUrl as string }}
+            style={styles.avatarImage}
+            contentFit="cover"
+            transition={200}
+          />
+        ) : (
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {user.username.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
         <Text style={styles.username}>{user.username}</Text>
         <Text style={styles.email}>{user.email}</Text>
         <View style={styles.levelRow}>
@@ -197,11 +212,20 @@ export default function ProfileScreen() {
               {user.status === "learning"
                 ? "🟢 Active"
                 : user.status === "paused"
-                ? "⏸ Paused"
-                : "✅ Completed"}
+                  ? "⏸ Paused"
+                  : "✅ Completed"}
             </Text>
           </View>
         </View>
+
+        {/* Edit Profile Button */}
+        <TouchableOpacity
+          style={styles.editProfileBtn}
+          onPress={() => router.push("/edit-profile")}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.editProfileBtnText}>✏️ Edit Profile</Text>
+        </TouchableOpacity>
       </LinearGradient>
 
       {/* Quick stats */}
@@ -375,7 +399,28 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: "rgba(255,255,255,0.5)",
   },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.5)",
+  },
   avatarText: { fontSize: 36, fontWeight: "800", color: "#fff" },
+  editProfileBtn: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: Radius.full,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  editProfileBtnText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
   username: { fontSize: 24, fontWeight: "800", color: "#fff" },
   email: { fontSize: 13, color: "rgba(255,255,255,0.75)" },
   levelRow: { flexDirection: "row", gap: 8, marginTop: 4 },

@@ -8,6 +8,7 @@ export default defineSchema({
     username: v.string(),
     email: v.string(),
     password: v.string(),
+    profile_image: v.optional(v.id("_storage")),  // Convex file storage ID
 
     level: v.string(),        // "beginner" | "basic"
     status: v.string(),       // "learning" | "paused" | "completed"
