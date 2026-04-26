@@ -3,7 +3,7 @@
  * Color palette, typography, spacing, and radius tokens.
  */
 
-export const AppColors = {
+export const LightColors = {
   primary: '#6C63FF',       // violet
   primaryDark: '#4B44CC',
   primaryLight: '#EAE8FF',
@@ -22,6 +22,29 @@ export const AppColors = {
   tabBar: '#FFFFFF',
   overlay: 'rgba(108,99,255,0.08)',
 };
+
+export const DarkColors: typeof LightColors = {
+  primary: '#8B80FF',
+  primaryDark: '#6C63FF',
+  primaryLight: '#2A2555',
+  accent: '#5EDDD4',
+  accentLight: '#1A3533',
+  success: '#52C97A',
+  warning: '#FFB347',
+  danger: '#FF6B6B',
+  background: '#121218',
+  surface: '#1E1E2A',
+  card: '#1E1E2A',
+  border: '#2D2D3F',
+  text: '#E8EAFF',
+  textSecondary: '#9CA3AF',
+  textMuted: '#6B7280',
+  tabBar: '#1A1A28',
+  overlay: 'rgba(108,99,255,0.15)',
+};
+
+/** Default colors — kept for backward compatibility */
+export const AppColors = LightColors;
 
 export const AppSpacing = {
   xs: 4,

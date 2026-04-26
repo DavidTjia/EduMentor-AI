@@ -1,5 +1,6 @@
-import { AppColors, Radius } from "@/constants/theme";
-import React, { useEffect, useRef } from "react";
+import { useColors } from "@/constants/ThemeContext";
+import { Radius } from "@/constants/theme";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 
 interface ProgressBarProps {
@@ -15,6 +16,7 @@ export function ProgressBar({
   height = 10,
   showPercent = false,
 }: ProgressBarProps) {
+  const colors = useColors();
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -29,6 +31,33 @@ export function ProgressBar({
     inputRange: [0, 1],
     outputRange: ["0%", "100%"],
   });
+
+  const styles = useMemo(() => StyleSheet.create({
+    labelRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 6,
+    },
+    label: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontWeight: "500",
+    },
+    percent: {
+      fontSize: 13,
+      color: colors.primary,
+      fontWeight: "700",
+    },
+    track: {
+      backgroundColor: colors.primaryLight,
+      borderRadius: Radius.full,
+      overflow: "hidden",
+    },
+    fill: {
+      backgroundColor: colors.primary,
+      borderRadius: Radius.full,
+    },
+  }), [colors]);
 
   return (
     <View>
@@ -51,30 +80,3 @@ export function ProgressBar({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  labelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  label: {
-    fontSize: 13,
-    color: AppColors.textSecondary,
-    fontWeight: "500",
-  },
-  percent: {
-    fontSize: 13,
-    color: AppColors.primary,
-    fontWeight: "700",
-  },
-  track: {
-    backgroundColor: AppColors.primaryLight,
-    borderRadius: Radius.full,
-    overflow: "hidden",
-  },
-  fill: {
-    backgroundColor: AppColors.primary,
-    borderRadius: Radius.full,
-  },
-});

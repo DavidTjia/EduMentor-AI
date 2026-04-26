@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { AppColors, AppSpacing, Radius } from "@/constants/theme";
+import { useColors } from "@/constants/ThemeContext";
+import { AppSpacing, Radius } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
@@ -10,7 +11,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -21,6 +22,7 @@ import {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const colors = useColors();
 
   const [userId, setUserId] = useState<Id<"users"> | null>(null);
 
@@ -74,6 +76,8 @@ export default function HomeScreen() {
   };
   const streakBadge = getStreakBadge(streakCount);
 
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <ScrollView
       style={styles.flex}
@@ -82,7 +86,7 @@ export default function HomeScreen() {
     >
       {/* Header */}
       <LinearGradient
-        colors={[AppColors.primary, AppColors.primaryDark]}
+        colors={[colors.primary, colors.primaryDark]}
         style={styles.headerGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -315,237 +319,106 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: AppColors.background },
-  container: { gap: AppSpacing.md, paddingBottom: AppSpacing.xl },
-  headerGradient: {
-    padding: AppSpacing.lg,
-    paddingTop: 60,
-    paddingBottom: AppSpacing.xl,
-    gap: AppSpacing.md,
-  },
-  headerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  greeting: { color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: "500" },
-  username: {
-    color: "#fff",
-    fontSize: 26,
-    fontWeight: "800",
-    marginTop: 2,
-  },
-  levelBadge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: Radius.full,
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-    marginTop: 6,
-    alignSelf: "flex-start",
-  },
-  levelText: { color: "#fff", fontSize: 11, fontWeight: "700", letterSpacing: 1 },
-  avatarBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarImg: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  avatarEmoji: { fontSize: 22, color: "#fff", fontWeight: "700" },
-  headerProgress: { gap: 8 },
-  progressLabelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  progressLabel: { color: "rgba(255,255,255,0.8)", fontSize: 13 },
-  progressCount: { color: "#fff", fontSize: 13, fontWeight: "700" },
-  headerProgressTrack: {
-    height: 8,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  headerProgressFill: {
-    height: "100%",
-    backgroundColor: "#fff",
-    borderRadius: 4,
-  },
-  todayCard: {
-    marginHorizontal: AppSpacing.lg,
-    gap: 10,
-  },
-  todayHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  todayBadge: {
-    backgroundColor: AppColors.primaryLight,
-    borderRadius: Radius.full,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  todayBadgeText: {
-    color: AppColors.primary,
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1,
-  },
-  todayArrow: { color: AppColors.primary, fontSize: 18, fontWeight: "700" },
-  topicTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: AppColors.text,
-    lineHeight: 24,
-  },
-  topicDesc: {
-    fontSize: 13,
-    color: AppColors.textSecondary,
-    lineHeight: 20,
-  },
-  topicMeta: { flexDirection: "row", gap: 12 },
-  metaItem: { fontSize: 12, color: AppColors.textMuted, fontWeight: "500" },
-  completedCard: {
-    marginHorizontal: AppSpacing.lg,
-    alignItems: "center",
-    gap: 8,
-  },
-  completedEmoji: { fontSize: 40 },
-  completedTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: AppColors.text,
-  },
-  completedSub: {
-    fontSize: 13,
-    color: AppColors.textSecondary,
-    textAlign: "center",
-  },
-  section: { paddingHorizontal: AppSpacing.lg, gap: 12 },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: AppColors.text,
-  },
-  seeAll: { fontSize: 13, color: AppColors.primary, fontWeight: "600" },
-  statsRow: {
-    flexDirection: "row",
-    marginTop: 14,
-    justifyContent: "space-around",
-  },
-  stat: { alignItems: "center", gap: 4 },
-  statNum: { fontSize: 22, fontWeight: "800", color: AppColors.primary },
-  statLabel: { fontSize: 11, color: AppColors.textMuted, fontWeight: "500" },
-  statDivider: { width: 1, backgroundColor: AppColors.border },
-  topicRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: AppColors.surface,
-    borderRadius: Radius.md,
-    padding: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  topicNumBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: AppColors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topicNumDone: { backgroundColor: AppColors.success },
-  topicNum: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: AppColors.primary,
-  },
-  topicNumTextDone: { color: "#fff" },
-  topicRowInfo: { flex: 1 },
-  topicRowName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: AppColors.text,
-  },
-  topicRowDone: {
-    color: AppColors.textMuted,
-    textDecorationLine: "line-through",
-  },
-  topicRowTime: {
-    fontSize: 11,
-    color: AppColors.textMuted,
-    marginTop: 2,
-  },
-  moreTopics: {
-    textAlign: "center",
-    color: AppColors.primary,
-    fontWeight: "600",
-    fontSize: 13,
-    paddingVertical: 8,
-  },
-  // ── Streak Card ───────────────────────────────
-  streakCard: {
-    marginHorizontal: AppSpacing.lg,
-    borderRadius: Radius.lg,
-    padding: AppSpacing.md,
-    shadowColor: "#FF5858",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  streakRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  streakLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  streakFire: {
-    fontSize: 36,
-  },
-  streakNumber: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#fff",
-  },
-  streakLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.85)",
-  },
-  streakBadge: {
-    borderRadius: Radius.full,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-  },
-  streakBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  streakHint: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.8)",
-    marginTop: 8,
-    fontStyle: "italic",
-  },
-});
+function createStyles(c: typeof import("@/constants/theme").AppColors) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: c.background },
+    container: { gap: AppSpacing.md, paddingBottom: AppSpacing.xl },
+    headerGradient: {
+      padding: AppSpacing.lg,
+      paddingTop: 60,
+      paddingBottom: AppSpacing.xl,
+      gap: AppSpacing.md,
+    },
+    headerContent: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+    },
+    greeting: { color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: "500" },
+    username: { color: "#fff", fontSize: 26, fontWeight: "800", marginTop: 2 },
+    levelBadge: {
+      backgroundColor: "rgba(255,255,255,0.2)",
+      borderRadius: Radius.full,
+      paddingVertical: 3,
+      paddingHorizontal: 10,
+      marginTop: 6,
+      alignSelf: "flex-start",
+    },
+    levelText: { color: "#fff", fontSize: 11, fontWeight: "700", letterSpacing: 1 },
+    avatarBtn: {
+      width: 48, height: 48, borderRadius: 24,
+      backgroundColor: "rgba(255,255,255,0.2)",
+      alignItems: "center", justifyContent: "center",
+    },
+    avatarImg: { width: 48, height: 48, borderRadius: 24 },
+    avatarEmoji: { fontSize: 22, color: "#fff", fontWeight: "700" },
+    headerProgress: { gap: 8 },
+    progressLabelRow: { flexDirection: "row", justifyContent: "space-between" },
+    progressLabel: { color: "rgba(255,255,255,0.8)", fontSize: 13 },
+    progressCount: { color: "#fff", fontSize: 13, fontWeight: "700" },
+    headerProgressTrack: {
+      height: 8, backgroundColor: "rgba(255,255,255,0.25)",
+      borderRadius: 4, overflow: "hidden",
+    },
+    headerProgressFill: { height: "100%", backgroundColor: "#fff", borderRadius: 4 },
+    todayCard: { marginHorizontal: AppSpacing.lg, gap: 10 },
+    todayHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    todayBadge: {
+      backgroundColor: c.primaryLight, borderRadius: Radius.full,
+      paddingVertical: 4, paddingHorizontal: 10,
+    },
+    todayBadgeText: { color: c.primary, fontSize: 10, fontWeight: "800", letterSpacing: 1 },
+    todayArrow: { color: c.primary, fontSize: 18, fontWeight: "700" },
+    topicTitle: { fontSize: 18, fontWeight: "800", color: c.text, lineHeight: 24 },
+    topicDesc: { fontSize: 13, color: c.textSecondary, lineHeight: 20 },
+    topicMeta: { flexDirection: "row", gap: 12 },
+    metaItem: { fontSize: 12, color: c.textMuted, fontWeight: "500" },
+    completedCard: { marginHorizontal: AppSpacing.lg, alignItems: "center", gap: 8 },
+    completedEmoji: { fontSize: 40 },
+    completedTitle: { fontSize: 18, fontWeight: "800", color: c.text },
+    completedSub: { fontSize: 13, color: c.textSecondary, textAlign: "center" },
+    section: { paddingHorizontal: AppSpacing.lg, gap: 12 },
+    sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    sectionTitle: { fontSize: 17, fontWeight: "700", color: c.text },
+    seeAll: { fontSize: 13, color: c.primary, fontWeight: "600" },
+    statsRow: { flexDirection: "row", marginTop: 14, justifyContent: "space-around" },
+    stat: { alignItems: "center", gap: 4 },
+    statNum: { fontSize: 22, fontWeight: "800", color: c.primary },
+    statLabel: { fontSize: 11, color: c.textMuted, fontWeight: "500" },
+    statDivider: { width: 1, backgroundColor: c.border },
+    topicRow: {
+      flexDirection: "row", alignItems: "center", gap: 12,
+      backgroundColor: c.surface, borderRadius: Radius.md, padding: 12,
+      shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+    },
+    topicNumBadge: {
+      width: 32, height: 32, borderRadius: 16,
+      backgroundColor: c.primaryLight, alignItems: "center", justifyContent: "center",
+    },
+    topicNumDone: { backgroundColor: c.success },
+    topicNum: { fontSize: 13, fontWeight: "700", color: c.primary },
+    topicNumTextDone: { color: "#fff" },
+    topicRowInfo: { flex: 1 },
+    topicRowName: { fontSize: 14, fontWeight: "600", color: c.text },
+    topicRowDone: { color: c.textMuted, textDecorationLine: "line-through" },
+    topicRowTime: { fontSize: 11, color: c.textMuted, marginTop: 2 },
+    moreTopics: {
+      textAlign: "center", color: c.primary, fontWeight: "600", fontSize: 13, paddingVertical: 8,
+    },
+    // ── Streak Card ───────────────────────────────
+    streakCard: {
+      marginHorizontal: AppSpacing.lg, borderRadius: Radius.lg, padding: AppSpacing.md,
+      shadowColor: "#FF5858", shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.25, shadowRadius: 10, elevation: 6,
+    },
+    streakRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    streakLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+    streakFire: { fontSize: 36 },
+    streakNumber: { fontSize: 28, fontWeight: "900", color: "#fff" },
+    streakLabel: { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.85)" },
+    streakBadge: { borderRadius: Radius.full, paddingVertical: 5, paddingHorizontal: 12 },
+    streakBadgeText: { fontSize: 11, fontWeight: "700" },
+    streakHint: { fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 8, fontStyle: "italic" },
+  });
+}

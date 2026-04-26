@@ -1,6 +1,6 @@
-import { AppColors } from "@/constants/theme";
+import { useColors } from "@/constants/ThemeContext";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, ViewStyle } from "react-native";
 
 interface BackButtonProps {
@@ -11,6 +11,27 @@ interface BackButtonProps {
 
 export function BackButton({ label = "Back", onPress, style }: BackButtonProps) {
   const router = useRouter();
+  const colors = useColors();
+
+  const styles = useMemo(() => StyleSheet.create({
+    btn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+    },
+    arrow: {
+      fontSize: 20,
+      color: colors.primary,
+      lineHeight: 22,
+    },
+    label: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.primary,
+    },
+  }), [colors]);
 
   return (
     <TouchableOpacity
@@ -23,23 +44,3 @@ export function BackButton({ label = "Back", onPress, style }: BackButtonProps) 
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  btn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  arrow: {
-    fontSize: 20,
-    color: AppColors.primary,
-    lineHeight: 22,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: AppColors.primary,
-  },
-});

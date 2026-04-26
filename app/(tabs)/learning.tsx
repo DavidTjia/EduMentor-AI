@@ -1,14 +1,15 @@
 import { AskAIModal } from "@/components/ui/ask-ai-modal";
 import { Card } from "@/components/ui/card";
 import { GradientButton } from "@/components/ui/gradient-button";
-import { AppColors, AppSpacing, Radius } from "@/constants/theme";
+import { useColors } from "@/constants/ThemeContext";
+import { AppSpacing, Radius } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -36,6 +37,7 @@ type Phase = "material" | "quiz" | "result";
 
 export default function LearningScreen() {
   const router = useRouter();
+  const colors = useColors();
 
   const [userId, setUserId] = useState<Id<"users"> | null>(null);
   const [level, setLevel] = useState("beginner");
@@ -76,11 +78,9 @@ export default function LearningScreen() {
     loadAuth();
   }, []);
 
-  // Load material when topic is ready
   useEffect(() => {
     if (!todayTopic || !userId || material) return;
     loadMaterial(todayTopic.topic);
-    // Start session
     startSession({ userId, topic: todayTopic.topic }).then((sid) =>
       setSessionId(sid)
     );
@@ -124,7 +124,6 @@ export default function LearningScreen() {
 
     await saveQuiz({ userId, topic: todayTopic.topic, score, is_passed: isPassed });
     if (sessionId) await endSession({ sessionId, score, completed: isPassed });
-    // Update streak when quiz is passed
     if (isPassed) await updateStreak({ userId });
     setPhase("result");
   };
@@ -132,21 +131,20 @@ export default function LearningScreen() {
   const handleNextTopic = async () => {
     if (!todayTopic || !userId) return;
     await markComplete({ planId: todayTopic._id });
-    // Reset local state for next topic
     setPhase("material");
     setMaterial(null);
     setQuiz(null);
     setSelected(null);
     setSessionId(null);
-    // reload will pick up the next incomplete topic
   };
 
   const topic = todayTopic?.topic ?? "Python";
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   if (todayTopic === undefined || !userId) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={AppColors.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Loading your lesson...</Text>
       </View>
     );
@@ -156,8 +154,8 @@ export default function LearningScreen() {
     return (
       <View style={styles.center}>
         <Text style={{ fontSize: 60 }}>🏆</Text>
-        <Text style={{ fontSize: 24, fontWeight: "800", color: AppColors.primary, marginTop: 10 }}>All Caught Up!</Text>
-        <Text style={{ fontSize: 14, color: AppColors.textSecondary, textAlign: "center", paddingHorizontal: 30, marginTop: 8 }}>
+        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.primary, marginTop: 10 }}>All Caught Up!</Text>
+        <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 30, marginTop: 8 }}>
           You have successfully completed all the topics in your current learning journey.
           Check your Progress tab to review your stats!
         </Text>
@@ -172,16 +170,10 @@ export default function LearningScreen() {
 
   return (
     <View style={styles.flex}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Top bar */}
         <View style={styles.topBar}>
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/home")}
-            style={styles.backBtn}
-          >
+          <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={styles.backBtn}>
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
           <View style={styles.topMid}>
@@ -200,12 +192,11 @@ export default function LearningScreen() {
           <>
             {loadingMaterial ? (
               <View style={styles.loadingCard}>
-                <ActivityIndicator color={AppColors.primary} />
+                <ActivityIndicator color={colors.primary} />
                 <Text style={styles.loadingText}>Generating lesson...</Text>
               </View>
             ) : material ? (
               <>
-                {/* Explanation */}
                 <Card style={styles.section}>
                   <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionIcon}>💡</Text>
@@ -214,7 +205,6 @@ export default function LearningScreen() {
                   <Text style={styles.explanationText}>{material.explanation}</Text>
                 </Card>
 
-                {/* Key points */}
                 <Card style={styles.section}>
                   <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionIcon}>🎯</Text>
@@ -228,7 +218,6 @@ export default function LearningScreen() {
                   ))}
                 </Card>
 
-                {/* Code example */}
                 <Card style={styles.section} padded={false}>
                   <View style={styles.codeHeader}>
                     <Text style={styles.sectionIcon}>🐍</Text>
@@ -242,11 +231,7 @@ export default function LearningScreen() {
                   </ScrollView>
                 </Card>
 
-                <GradientButton
-                  label="Take the Quiz →"
-                  onPress={loadQuiz}
-                  style={styles.quizBtn}
-                />
+                <GradientButton label="Take the Quiz →" onPress={loadQuiz} style={styles.quizBtn} />
               </>
             ) : null}
           </>
@@ -257,7 +242,7 @@ export default function LearningScreen() {
           <>
             {loadingQuiz ? (
               <View style={styles.loadingCard}>
-                <ActivityIndicator color={AppColors.primary} />
+                <ActivityIndicator color={colors.primary} />
                 <Text style={styles.loadingText}>Generating quiz...</Text>
               </View>
             ) : quiz ? (
@@ -280,27 +265,12 @@ export default function LearningScreen() {
                         onPress={() => setSelected(idx)}
                         activeOpacity={0.8}
                       >
-                        <View
-                          style={[
-                            styles.choiceLetter,
-                            isSelected && styles.choiceLetterActive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.choiceLetterText,
-                              isSelected && styles.choiceLetterTextActive,
-                            ]}
-                          >
+                        <View style={[styles.choiceLetter, isSelected && styles.choiceLetterActive]}>
+                          <Text style={[styles.choiceLetterText, isSelected && styles.choiceLetterTextActive]}>
                             {String.fromCharCode(65 + idx)}
                           </Text>
                         </View>
-                        <Text
-                          style={[
-                            styles.choiceText,
-                            isSelected && styles.choiceTextActive,
-                          ]}
-                        >
+                        <Text style={[styles.choiceText, isSelected && styles.choiceTextActive]}>
                           {choice}
                         </Text>
                       </TouchableOpacity>
@@ -343,17 +313,11 @@ export default function LearningScreen() {
               <Text style={styles.explanationText}>{quiz.explanation}</Text>
               <View style={styles.correctAnswerRow}>
                 <Text style={styles.correctLabel}>Correct answer: </Text>
-                <Text style={styles.correctValue}>
-                  {quiz.choices[quiz.correct_index]}
-                </Text>
+                <Text style={styles.correctValue}>{quiz.choices[quiz.correct_index]}</Text>
               </View>
             </Card>
 
-            <GradientButton
-              label="Next Topic →"
-              onPress={handleNextTopic}
-              style={styles.quizBtn}
-            />
+            <GradientButton label="Next Topic →" onPress={handleNextTopic} style={styles.quizBtn} />
             <GradientButton
               label="Back to Home"
               onPress={() => router.push("/(tabs)/home")}
@@ -366,248 +330,99 @@ export default function LearningScreen() {
         <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* Floating Ask AI button */}
       {phase === "material" && material && (
-        <TouchableOpacity
-          style={styles.fabBtn}
-          onPress={() => setAiModalVisible(true)}
-          activeOpacity={0.9}
-        >
+        <TouchableOpacity style={styles.fabBtn} onPress={() => setAiModalVisible(true)} activeOpacity={0.9}>
           <Text style={styles.fabText}>✦ Ask AI</Text>
         </TouchableOpacity>
       )}
 
-      <AskAIModal
-        visible={aiModalVisible}
-        onClose={() => setAiModalVisible(false)}
-        topic={topic}
-      />
+      <AskAIModal visible={aiModalVisible} onClose={() => setAiModalVisible(false)} topic={topic} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: AppColors.background },
-  container: {
-    padding: AppSpacing.lg,
-    paddingTop: 60,
-    gap: AppSpacing.md,
-    paddingBottom: AppSpacing.xl,
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: AppColors.background,
-    gap: 12,
-  },
-  loadingText: {
-    color: AppColors.textSecondary,
-    fontSize: 14,
-  },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 4,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: AppColors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  backArrow: { fontSize: 18, color: AppColors.primary, lineHeight: 20 },
-  topMid: { flex: 1 },
-  topLabel: { fontSize: 11, color: AppColors.textMuted, fontWeight: "600", letterSpacing: 1 },
-  topTopic: { fontSize: 15, fontWeight: "700", color: AppColors.text },
-  phaseBadge: {
-    backgroundColor: AppColors.primaryLight,
-    borderRadius: Radius.full,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-  },
-  phaseText: { fontSize: 11, fontWeight: "700", color: AppColors.primary },
-  loadingCard: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: AppSpacing.xl,
-    gap: 12,
-  },
-  section: { gap: 12 },
-  sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  sectionIcon: { fontSize: 18 },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: AppColors.text },
-  explanationText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: AppColors.textSecondary,
-  },
-  keyPointRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    paddingLeft: 4,
-  },
-  keyDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: AppColors.primary,
-    marginTop: 8,
-  },
-  keyPointText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 20,
-    color: AppColors.textSecondary,
-  },
-  codeHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: AppColors.border,
-  },
-  codeLangBadge: {
-    marginLeft: "auto",
-    backgroundColor: AppColors.text,
-    borderRadius: 4,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-  },
-  codeLang: { color: "#fff", fontSize: 10, fontWeight: "700" },
-  codeText: {
-    fontFamily: "monospace",
-    fontSize: 13,
-    color: AppColors.text,
-    backgroundColor: "#F8F9FF",
-    padding: 16,
-    lineHeight: 22,
-    minWidth: "100%",
-  },
-  quizBtn: { marginTop: 4 },
-  quizHeaderRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
-  quizTag: {
-    backgroundColor: AppColors.primaryLight,
-    color: AppColors.primary,
-    fontSize: 11,
-    fontWeight: "700",
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: Radius.full,
-    letterSpacing: 0.5,
-  },
-  quizTopic: { fontSize: 13, color: AppColors.textMuted },
-  quizQuestion: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: AppColors.text,
-    lineHeight: 26,
-  },
-  choicesWrap: { gap: 10 },
-  choiceCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: AppColors.surface,
-    borderRadius: Radius.md,
-    padding: 14,
-    borderWidth: 2,
-    borderColor: AppColors.border,
-  },
-  choiceSelected: {
-    borderColor: AppColors.primary,
-    backgroundColor: AppColors.primaryLight,
-  },
-  choiceLetter: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: AppColors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  choiceLetterActive: {
-    backgroundColor: AppColors.primary,
-    borderColor: AppColors.primary,
-  },
-  choiceLetterText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: AppColors.textSecondary,
-  },
-  choiceLetterTextActive: { color: "#fff" },
-  choiceText: { flex: 1, fontSize: 14, color: AppColors.text, lineHeight: 20 },
-  choiceTextActive: { color: AppColors.primaryDark, fontWeight: "600" },
-  resultBanner: {
-    backgroundColor: AppColors.primaryLight,
-    borderRadius: Radius.xl,
-    padding: AppSpacing.lg,
-    alignItems: "center",
-    gap: 8,
-  },
-  resultEmoji: { fontSize: 52 },
-  resultTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: AppColors.primary,
-  },
-  resultScore: {
-    fontSize: 16,
-    color: AppColors.primaryDark,
-    fontWeight: "600",
-  },
-  explanationLabel: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: AppColors.text,
-  },
-  correctAnswerRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 6,
-    padding: 10,
-    backgroundColor: AppColors.accentLight,
-    borderRadius: Radius.sm,
-  },
-  correctLabel: {
-    fontSize: 13,
-    color: AppColors.textSecondary,
-    fontWeight: "600",
-  },
-  correctValue: {
-    fontSize: 13,
-    color: AppColors.accent,
-    fontWeight: "700",
-  },
-  fabBtn: {
-    position: "absolute",
-    bottom: 100,
-    right: AppSpacing.lg,
-    backgroundColor: AppColors.primary,
-    borderRadius: Radius.full,
-    paddingVertical: 14,
-    paddingHorizontal: 22,
-    shadowColor: AppColors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  fabText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-});
+function createStyles(c: typeof import("@/constants/theme").AppColors) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: c.background },
+    container: { padding: AppSpacing.lg, paddingTop: 60, gap: AppSpacing.md, paddingBottom: AppSpacing.xl },
+    center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.background, gap: 12 },
+    loadingText: { color: c.textSecondary, fontSize: 14 },
+    topBar: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
+    backBtn: {
+      width: 36, height: 36, borderRadius: 18, backgroundColor: c.surface,
+      alignItems: "center", justifyContent: "center",
+      shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    },
+    backArrow: { fontSize: 18, color: c.primary, lineHeight: 20 },
+    topMid: { flex: 1 },
+    topLabel: { fontSize: 11, color: c.textMuted, fontWeight: "600", letterSpacing: 1 },
+    topTopic: { fontSize: 15, fontWeight: "700", color: c.text },
+    phaseBadge: { backgroundColor: c.primaryLight, borderRadius: Radius.full, paddingVertical: 5, paddingHorizontal: 10 },
+    phaseText: { fontSize: 11, fontWeight: "700", color: c.primary },
+    loadingCard: { alignItems: "center", justifyContent: "center", padding: AppSpacing.xl, gap: 12 },
+    section: { gap: 12 },
+    sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    sectionIcon: { fontSize: 18 },
+    sectionTitle: { fontSize: 16, fontWeight: "700", color: c.text },
+    explanationText: { fontSize: 14, lineHeight: 22, color: c.textSecondary },
+    keyPointRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, paddingLeft: 4 },
+    keyDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.primary, marginTop: 8 },
+    keyPointText: { flex: 1, fontSize: 13, lineHeight: 20, color: c.textSecondary },
+    codeHeader: {
+      flexDirection: "row", alignItems: "center", gap: 8, padding: 16,
+      borderBottomWidth: 1, borderBottomColor: c.border,
+    },
+    codeLangBadge: { marginLeft: "auto", backgroundColor: c.text, borderRadius: 4, paddingVertical: 2, paddingHorizontal: 8 },
+    codeLang: { color: c.background, fontSize: 10, fontWeight: "700" },
+    codeText: {
+      fontFamily: "monospace", fontSize: 13, color: c.text,
+      backgroundColor: c.overlay, padding: 16, lineHeight: 22, minWidth: "100%",
+    },
+    quizBtn: { marginTop: 4 },
+    quizHeaderRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
+    quizTag: {
+      backgroundColor: c.primaryLight, color: c.primary, fontSize: 11, fontWeight: "700",
+      paddingVertical: 3, paddingHorizontal: 8, borderRadius: Radius.full, letterSpacing: 0.5,
+    },
+    quizTopic: { fontSize: 13, color: c.textMuted },
+    quizQuestion: { fontSize: 17, fontWeight: "700", color: c.text, lineHeight: 26 },
+    choicesWrap: { gap: 10 },
+    choiceCard: {
+      flexDirection: "row", alignItems: "center", gap: 12,
+      backgroundColor: c.surface, borderRadius: Radius.md, padding: 14,
+      borderWidth: 2, borderColor: c.border,
+    },
+    choiceSelected: { borderColor: c.primary, backgroundColor: c.primaryLight },
+    choiceLetter: {
+      width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: c.border,
+      alignItems: "center", justifyContent: "center",
+    },
+    choiceLetterActive: { backgroundColor: c.primary, borderColor: c.primary },
+    choiceLetterText: { fontSize: 13, fontWeight: "700", color: c.textSecondary },
+    choiceLetterTextActive: { color: "#fff" },
+    choiceText: { flex: 1, fontSize: 14, color: c.text, lineHeight: 20 },
+    choiceTextActive: { color: c.primaryDark, fontWeight: "600" },
+    resultBanner: {
+      backgroundColor: c.primaryLight, borderRadius: Radius.xl, padding: AppSpacing.lg,
+      alignItems: "center", gap: 8,
+    },
+    resultEmoji: { fontSize: 52 },
+    resultTitle: { fontSize: 26, fontWeight: "800", color: c.primary },
+    resultScore: { fontSize: 16, color: c.primaryDark, fontWeight: "600" },
+    explanationLabel: { fontSize: 14, fontWeight: "700", color: c.text },
+    correctAnswerRow: {
+      flexDirection: "row", flexWrap: "wrap", marginTop: 6, padding: 10,
+      backgroundColor: c.accentLight, borderRadius: Radius.sm,
+    },
+    correctLabel: { fontSize: 13, color: c.textSecondary, fontWeight: "600" },
+    correctValue: { fontSize: 13, color: c.accent, fontWeight: "700" },
+    fabBtn: {
+      position: "absolute", bottom: 100, right: AppSpacing.lg,
+      backgroundColor: c.primary, borderRadius: Radius.full,
+      paddingVertical: 14, paddingHorizontal: 22,
+      shadowColor: c.primary, shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.35, shadowRadius: 12, elevation: 10,
+    },
+    fabText: { color: "#fff", fontSize: 14, fontWeight: "700", letterSpacing: 0.3 },
+  });
+}

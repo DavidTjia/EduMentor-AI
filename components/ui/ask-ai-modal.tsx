@@ -1,7 +1,8 @@
-import { AppColors, AppSpacing, Radius } from "@/constants/theme";
+import { useColors } from "@/constants/ThemeContext";
+import { AppSpacing, Radius } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import { useAction } from "convex/react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -22,6 +23,7 @@ interface AskAIModalProps {
 }
 
 export function AskAIModal({ visible, onClose, topic }: AskAIModalProps) {
+  const colors = useColors();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,6 +50,130 @@ export function AskAIModal({ visible, onClose, topic }: AskAIModalProps) {
     onClose();
   };
 
+  const styles = useMemo(() => StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.45)",
+      justifyContent: "flex-end",
+    },
+    sheet: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
+      paddingBottom: Platform.OS === "ios" ? 40 : 24,
+      maxHeight: "80%",
+    },
+    header: {
+      paddingTop: 12,
+      paddingHorizontal: AppSpacing.lg,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    indicator: {
+      width: 40,
+      height: 4,
+      backgroundColor: colors.border,
+      borderRadius: Radius.full,
+      alignSelf: "center",
+      marginBottom: 12,
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    subtitle: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    closeBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primaryLight,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    closeText: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    answerScroll: {
+      maxHeight: 200,
+      paddingHorizontal: AppSpacing.lg,
+      paddingTop: 12,
+    },
+    loadingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 12,
+    },
+    loadingText: {
+      color: colors.textSecondary,
+      fontSize: 14,
+    },
+    answerBubble: {
+      backgroundColor: colors.overlay,
+      borderRadius: Radius.md,
+      padding: 14,
+      marginBottom: 8,
+    },
+    answerLabel: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.primary,
+      marginBottom: 6,
+    },
+    answerText: {
+      fontSize: 14,
+      lineHeight: 22,
+      color: colors.text,
+    },
+    inputRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 10,
+      paddingHorizontal: AppSpacing.lg,
+      paddingTop: 12,
+    },
+    input: {
+      flex: 1,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      borderRadius: Radius.md,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 14,
+      color: colors.text,
+      maxHeight: 100,
+      backgroundColor: colors.background,
+    },
+    sendBtn: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    sendDisabled: {
+      backgroundColor: colors.textMuted,
+    },
+    sendIcon: {
+      color: "#fff",
+      fontSize: 16,
+    },
+  }), [colors]);
+
   return (
     <Modal
       visible={visible}
@@ -60,11 +186,9 @@ export function AskAIModal({ visible, onClose, topic }: AskAIModalProps) {
         style={{ flex: 1 }}
       >
         <View style={styles.overlay}>
-          {/* Touchable background to dismiss */}
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={handleClose} />
 
           <View style={styles.sheet}>
-            {/* Header */}
             <View style={styles.header}>
               <View style={styles.indicator} />
               <View style={styles.headerRow}>
@@ -78,11 +202,10 @@ export function AskAIModal({ visible, onClose, topic }: AskAIModalProps) {
               </View>
             </View>
 
-            {/* Answer area */}
             <ScrollView style={styles.answerScroll} showsVerticalScrollIndicator={false}>
               {loading && (
                 <View style={styles.loadingRow}>
-                  <ActivityIndicator color={AppColors.primary} />
+                  <ActivityIndicator color={colors.primary} />
                   <Text style={styles.loadingText}>Thinking...</Text>
                 </View>
               )}
@@ -94,12 +217,11 @@ export function AskAIModal({ visible, onClose, topic }: AskAIModalProps) {
               )}
             </ScrollView>
 
-            {/* Input row */}
             <View style={styles.inputRow}>
               <TextInput
                 style={styles.input}
                 placeholder="Ask anything about this topic..."
-                placeholderTextColor={AppColors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={question}
                 onChangeText={setQuestion}
                 multiline
@@ -122,127 +244,3 @@ export function AskAIModal({ visible, onClose, topic }: AskAIModalProps) {
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    backgroundColor: AppColors.surface,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingBottom: Platform.OS === "ios" ? 40 : 24,
-    maxHeight: "80%",
-  },
-  header: {
-    paddingTop: 12,
-    paddingHorizontal: AppSpacing.lg,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: AppColors.border,
-  },
-  indicator: {
-    width: 40,
-    height: 4,
-    backgroundColor: AppColors.border,
-    borderRadius: Radius.full,
-    alignSelf: "center",
-    marginBottom: 12,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: AppColors.text,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: AppColors.textMuted,
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: AppColors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  closeText: {
-    color: AppColors.primary,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  answerScroll: {
-    maxHeight: 200,
-    paddingHorizontal: AppSpacing.lg,
-    paddingTop: 12,
-  },
-  loadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 12,
-  },
-  loadingText: {
-    color: AppColors.textSecondary,
-    fontSize: 14,
-  },
-  answerBubble: {
-    backgroundColor: AppColors.overlay,
-    borderRadius: Radius.md,
-    padding: 14,
-    marginBottom: 8,
-  },
-  answerLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: AppColors.primary,
-    marginBottom: 6,
-  },
-  answerText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: AppColors.text,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 10,
-    paddingHorizontal: AppSpacing.lg,
-    paddingTop: 12,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: AppColors.border,
-    borderRadius: Radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: AppColors.text,
-    maxHeight: 100,
-    backgroundColor: AppColors.background,
-  },
-  sendBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: AppColors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sendDisabled: {
-    backgroundColor: AppColors.textMuted,
-  },
-  sendIcon: {
-    color: "#fff",
-    fontSize: 16,
-  },
-});

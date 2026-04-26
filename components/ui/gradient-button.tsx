@@ -1,6 +1,7 @@
-import { AppColors, AppSpacing, Radius } from "@/constants/theme";
+import { useColors } from "@/constants/ThemeContext";
+import { AppSpacing, Radius } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -26,6 +27,42 @@ export function GradientButton({
   style,
   variant = "primary",
 }: GradientButtonProps) {
+  const colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    wrapper: {
+      borderRadius: Radius.lg,
+      overflow: "hidden",
+    },
+    gradient: {
+      paddingVertical: 16,
+      paddingHorizontal: AppSpacing.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 54,
+    },
+    label: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "700",
+      letterSpacing: 0.3,
+    },
+    outlineBtn: {
+      borderWidth: 2,
+      borderColor: colors.primary,
+      borderRadius: Radius.lg,
+      paddingVertical: 14,
+      paddingHorizontal: AppSpacing.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 54,
+    },
+    outlineLabel: {
+      color: colors.primary,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+  }), [colors]);
+
   if (variant === "outline") {
     return (
       <TouchableOpacity
@@ -49,8 +86,8 @@ export function GradientButton({
       <LinearGradient
         colors={
           variant === "secondary"
-            ? [AppColors.accent, "#3BBDB5"]
-            : [AppColors.primary, AppColors.primaryDark]
+            ? [colors.accent, "#3BBDB5"]
+            : [colors.primary, colors.primaryDark]
         }
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
@@ -65,38 +102,3 @@ export function GradientButton({
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    borderRadius: Radius.lg,
-    overflow: "hidden",
-  },
-  gradient: {
-    paddingVertical: 16,
-    paddingHorizontal: AppSpacing.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 54,
-  },
-  label: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  outlineBtn: {
-    borderWidth: 2,
-    borderColor: AppColors.primary,
-    borderRadius: Radius.lg,
-    paddingVertical: 14,
-    paddingHorizontal: AppSpacing.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 54,
-  },
-  outlineLabel: {
-    color: AppColors.primary,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

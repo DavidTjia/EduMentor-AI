@@ -1,4 +1,4 @@
-import { AppColors } from "@/constants/theme";
+import { ThemeProvider, useColors, useTheme } from "@/constants/ThemeContext";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -12,14 +12,17 @@ export const unstable_settings = {
   initialRouteName: "login",
 };
 
-export default function RootLayout() {
+function InnerLayout() {
+  const colors = useColors();
+  const { isDark } = useTheme();
+
   return (
-    <ConvexProvider client={convex}>
-      <StatusBar style="dark" backgroundColor={AppColors.background} />
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.background} />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: AppColors.background },
+          contentStyle: { backgroundColor: colors.background },
           animation: "slide_from_right",
         }}
       >
@@ -31,6 +34,16 @@ export default function RootLayout() {
         <Stack.Screen name="cycle-result" />
         <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
       </Stack>
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ConvexProvider client={convex}>
+      <ThemeProvider>
+        <InnerLayout />
+      </ThemeProvider>
     </ConvexProvider>
   );
 }
