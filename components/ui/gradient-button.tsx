@@ -1,13 +1,13 @@
+import { AppColors, AppSpacing, Radius } from "@/constants/theme";
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  ViewStyle,
   ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  ViewStyle,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { AppColors, Radius, AppSpacing } from "@/constants/theme";
 
 interface GradientButtonProps {
   label: string;

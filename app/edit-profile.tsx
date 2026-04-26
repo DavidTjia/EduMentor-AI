@@ -2,6 +2,7 @@ import { BackButton } from "@/components/ui/back-button";
 import { AppColors, AppSpacing, Radius } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery } from "convex/react";
 import { Image } from "expo-image";
@@ -24,6 +25,7 @@ import {
 
 export default function EditProfileScreen() {
     const router = useRouter();
+
     const [userId, setUserId] = useState<Id<"users"> | null>(null);
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");

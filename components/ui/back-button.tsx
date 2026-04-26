@@ -1,7 +1,7 @@
-import React from "react";
-import { TouchableOpacity, Text, StyleSheet, ViewStyle } from "react-native";
-import { useRouter } from "expo-router";
 import { AppColors } from "@/constants/theme";
+import { useRouter } from "expo-router";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, ViewStyle } from "react-native";
 
 interface BackButtonProps {
   label?: string;

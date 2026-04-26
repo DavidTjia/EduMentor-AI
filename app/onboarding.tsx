@@ -1,20 +1,21 @@
+import { BackButton } from "@/components/ui/back-button";
+import { GradientButton } from "@/components/ui/gradient-button";
+import { AppColors, AppSpacing, Radius } from "@/constants/theme";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useMutation } from "convex/react";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { GradientButton } from "@/components/ui/gradient-button";
-import { BackButton } from "@/components/ui/back-button";
-import { AppColors, AppSpacing, Radius } from "@/constants/theme";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Id } from "@/convex/_generated/dataModel";
 
 const LEVELS = [
   {
@@ -38,6 +39,7 @@ const STUDY_TIMES = [
 
 export default function OnboardingScreen() {
   const router = useRouter();
+
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<number>(10);
   const [loading, setLoading] = useState(false);

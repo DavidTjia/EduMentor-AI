@@ -3,6 +3,7 @@ import { GradientButton } from "@/components/ui/gradient-button";
 import { AppColors, AppSpacing, Radius } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery } from "convex/react";
 import { Image } from "expo-image";
@@ -25,6 +26,7 @@ const TELEGRAM_BOT_USERNAME = "Elvyd_bot";
 
 export default function ProfileScreen() {
   const router = useRouter();
+
   const [userId, setUserId] = useState<Id<"users"> | null>(null);
 
   useEffect(() => {
@@ -360,6 +362,7 @@ export default function ProfileScreen() {
           </View>
         )}
       </Card>
+
 
       {/* Actions */}
       <View style={styles.actionsSection}>

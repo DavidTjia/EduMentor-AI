@@ -1,24 +1,25 @@
+import { Card } from "@/components/ui/card";
+import { GradientButton } from "@/components/ui/gradient-button";
+import { AppColors, AppSpacing, Radius } from "@/constants/theme";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery } from "convex/react";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
   ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { GradientButton } from "@/components/ui/gradient-button";
-import { Card } from "@/components/ui/card";
-import { ProgressBar } from "@/components/ui/progress-bar";
-import { AppColors, AppSpacing, Radius } from "@/constants/theme";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Id } from "@/convex/_generated/dataModel";
-import { LinearGradient } from "expo-linear-gradient";
 
 export default function CycleResultScreen() {
   const router = useRouter();
+
   const [userId, setUserId] = useState<Id<"users"> | null>(null);
 
   useEffect(() => {
@@ -73,8 +74,8 @@ export default function CycleResultScreen() {
           {completionPct >= 80
             ? "Great Job!"
             : completionPct >= 50
-            ? "Good Progress!"
-            : "Keep Going!"}
+              ? "Good Progress!"
+              : "Keep Going!"}
         </Text>
         <Text style={styles.heroSub}>Cycle 1 completed</Text>
 
@@ -186,8 +187,8 @@ export default function CycleResultScreen() {
           {completionPct >= 80
             ? "🌟 Excellent work! You've mastered the fundamentals. Your AI agent is preparing a more advanced plan for you."
             : completionPct >= 50
-            ? "🚀 Great progress! Review the weak topics and you'll be ready for the next level."
-            : "💡 Every expert was once a beginner. Review the material, ask the AI tutor, and try again!"}
+              ? "🚀 Great progress! Review the weak topics and you'll be ready for the next level."
+              : "💡 Every expert was once a beginner. Review the material, ask the AI tutor, and try again!"}
         </Text>
       </Card>
 

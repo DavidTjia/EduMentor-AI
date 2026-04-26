@@ -1,26 +1,27 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-} from "react-native";
-import { useRouter } from "expo-router";
+import { BackButton } from "@/components/ui/back-button";
+import { GradientButton } from "@/components/ui/gradient-button";
+import { AppColors, AppSpacing, Radius } from "@/constants/theme";
+import { api } from "@/convex/_generated/api";
+
 import { useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
-import { api } from "@/convex/_generated/api";
-import { GradientButton } from "@/components/ui/gradient-button";
-import { BackButton } from "@/components/ui/back-button";
-import { AppColors, AppSpacing, Radius } from "@/constants/theme";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function RegisterScreen() {
   const router = useRouter();
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,9 +52,9 @@ export default function RegisterScreen() {
         password,
         level: "beginner", // will be set on onboarding
       });
-      
+
       Alert.alert(
-        "Account Created!", 
+        "Account Created!",
         "Your account has been created successfully. Please login to continue.",
         [{ text: "OK", onPress: () => router.replace("/login") }]
       );

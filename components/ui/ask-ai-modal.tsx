@@ -1,19 +1,19 @@
+import { AppColors, AppSpacing, Radius } from "@/constants/theme";
+import { api } from "@/convex/_generated/api";
+import { useAction } from "convex/react";
 import React, { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  ScrollView,
+  View,
 } from "react-native";
-import { AppColors, Radius, AppSpacing } from "@/constants/theme";
-import { useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
 
 interface AskAIModalProps {
   visible: boolean;
@@ -62,7 +62,7 @@ export function AskAIModal({ visible, onClose, topic }: AskAIModalProps) {
         <View style={styles.overlay}>
           {/* Touchable background to dismiss */}
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={handleClose} />
-          
+
           <View style={styles.sheet}>
             {/* Header */}
             <View style={styles.header}>

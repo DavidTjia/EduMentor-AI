@@ -1,8 +1,8 @@
-import { Tabs } from "expo-router";
-import React from "react";
-import { Platform, View, StyleSheet } from "react-native";
 import { AppColors, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import React from "react";
+import { Platform, StyleSheet, View } from "react-native";
 
 export default function TabLayout() {
   return (

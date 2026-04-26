@@ -1,25 +1,27 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { useMutation } from "convex/react";
-import { ConvexError } from "convex/values";
-import { api } from "@/convex/_generated/api";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { AppColors, AppSpacing, Radius } from "@/constants/theme";
+import { api } from "@/convex/_generated/api";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useMutation } from "convex/react";
+import { ConvexError } from "convex/values";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function LoginScreen() {
   const router = useRouter();
+
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,12 +35,12 @@ export default function LoginScreen() {
       Alert.alert("Missing Fields", "Please enter your email/username and password.");
       return;
     }
-    
+
     setLoading(true);
     try {
-      const user = await doLogin({ 
-        emailOrUsername: emailOrUsername.trim().toLowerCase(), 
-        password 
+      const user = await doLogin({
+        emailOrUsername: emailOrUsername.trim().toLowerCase(),
+        password
       });
 
       if (!user) {

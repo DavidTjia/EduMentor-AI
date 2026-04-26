@@ -1,23 +1,25 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Card } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { AppColors, AppSpacing, Radius } from "@/constants/theme";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery } from "convex/react";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export default function ProgressScreen() {
   const router = useRouter();
+
   const [userId, setUserId] = useState<Id<"users"> | null>(null);
 
   useEffect(() => {
@@ -49,8 +51,8 @@ export default function ProgressScreen() {
   const avgScore =
     progressList && progressList.length > 0
       ? Math.round(
-          progressList.reduce((s, p) => s + p.score, 0) / progressList.length
-        )
+        progressList.reduce((s, p) => s + p.score, 0) / progressList.length
+      )
       : 0;
 
   const isLoading = progressList === undefined || allPlans === undefined;
