@@ -7,7 +7,9 @@ import { internalAction } from "./_generated/server";
 
 const TELEGRAM_API = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}`;
 const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+
+const MAX_RETRIES = 3;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -24,23 +26,33 @@ async function callGemini(prompt: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-    }),
-  });
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
 
-  if (!res.ok) {
+    if (res.ok) {
+      const data = (await res.json()) as {
+        candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
+      };
+      return data.candidates[0]?.content?.parts[0]?.text ?? "";
+    }
+
+    if (res.status === 429 && attempt < MAX_RETRIES - 1) {
+      const waitMs = (attempt + 1) * 8000;
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
+
     const err = await res.text();
     throw new Error(`Gemini error: ${res.statusText}. ${err}`);
   }
 
-  const data = (await res.json()) as {
-    candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
-  };
-  return data.candidates[0]?.content?.parts[0]?.text ?? "";
+  throw new Error("Gemini API failed after retries");
 }
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
@@ -156,7 +168,7 @@ export const processWebhookMessage = internalAction({
 
       await callTelegramAPI("sendMessage", {
         chat_id: args.chatId,
-        text: `✅ Berhasil! Akun EduMentor kamu (${user.username}) sudah terhubung!\n\nMulai sekarang, aku akan mengirimkan jadwal belajar harianmu setiap pagi jam 08:00. Semangat belajar Python! 🐍🎓`,
+        text: `✅ Berhasil! Akun EduMentor kamu (${user.username}) sudah terhubung!\n\nMulai sekarang, aku akan mengirimkan jadwal belajar harianmu setiap hari jam 19:50 WITA. Semangat belajar Python! 🐍🎓`,
       });
       return;
     }
@@ -216,15 +228,44 @@ Balas HANYA dengan JSON valid, tanpa markdown:
       });
       
       if (upcomingPlans.length > 0) {
-        let scheduleText = "📅 **Jadwal Belajar Kamu Berikutnya:**\n\n";
+        let scheduleText = "📅 Jadwal Belajar Kamu Berikutnya:\n\n";
         upcomingPlans.forEach((p, idx) => {
           let dayLabel = idx === 0 ? "Hari ini" : (idx === 1 ? "Besok" : `H+${idx}`);
-          scheduleText += `▪️ **${dayLabel}**: ${p.topic}\n   (${p.estimated_time} menit)\n`;
+          scheduleText += `▪️ ${dayLabel}: ${p.topic}\n   (${p.estimated_time} menit)\n`;
         });
         scheduleText += "\nSemangat terus belajarnya ya! 🚀";
         intentData.reply = scheduleText;
       } else {
         intentData.reply = "🎉 Selamat! Kamu tidak punya jadwal yang pending saat ini. Kamu sudah menyelesaikan semua topik di siklus belajarmu.";
+      }
+    } else if (intentData.intent === "question") {
+      // Fetch the user's current learning topic for context-aware answers
+      const currentPlan = await ctx.runQuery(internal.telegramDb.getTodayPlanForUser, {
+        userId: user._id as Id<"users">,
+      });
+      const currentTopic = currentPlan?.topic ?? "Python dasar";
+
+      const pythonPrompt = `
+Kamu adalah EduMentor AI, tutor Python yang ahli, ramah, dan sabar untuk pemula.
+Pengguna bernama ${user.username} bertanya melalui Telegram:
+"${args.text}"
+
+Materi yang sedang dipelajari pengguna saat ini: "${currentTopic}"
+
+ATURAN PENTING:
+1. Jika pertanyaan berkaitan dengan materi "${currentTopic}" atau Python secara umum, berikan penjelasan SINGKAT (5-8 kalimat) yang jelas dan mudah dipahami pemula.
+2. Sertakan 1 contoh kode pendek jika relevan (tulis langsung tanpa backtick/markdown).
+3. Di akhir jawaban, SELALU tambahkan pesan ini:
+   "Untuk penjelasan lengkap, contoh kode interaktif, dan quiz, buka aplikasi EduMentor kamu ya! Materinya lebih detail di sana."
+4. Jika pertanyaan TIDAK berkaitan dengan Python/programming, tolak dengan ramah dan arahkan kembali ke belajar Python.
+
+Gunakan Bahasa Indonesia yang santai.
+PENTING: Jangan gunakan tanda bintang (*), garis bawah (_), atau format markdown apapun. Gunakan plain text saja.
+`;
+      try {
+        intentData.reply = await callGemini(pythonPrompt);
+      } catch {
+        intentData.reply = `Pertanyaan bagus, ${user.username}! Sayangnya aku sedang gangguan koneksi.\n\nCoba tanyakan lagi nanti, atau buka aplikasi EduMentor untuk materi lengkap tentang "${currentTopic}" beserta quiz interaktifnya!`;
       }
     }
 

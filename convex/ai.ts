@@ -6,31 +6,44 @@ import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
 const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+
+const MAX_RETRIES = 3;
 
 async function callGemini(prompt: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-    }),
-  });
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
 
-  if (!res.ok) {
+    if (res.ok) {
+      const data = (await res.json()) as {
+        candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
+      };
+      return data.candidates[0]?.content?.parts[0]?.text ?? "";
+    }
+
+    if (res.status === 429 && attempt < MAX_RETRIES - 1) {
+      // Rate limited — wait and retry
+      const waitMs = (attempt + 1) * 8000; // 8s, 16s
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
+
     const err = await res.text();
     let msg = `Gemini API error: ${res.statusText}. ${err}`;
     if (res.status === 429) msg = `AI quota exceeded: ${err}`;
     throw new ConvexError(msg);
   }
 
-  const data = (await res.json()) as {
-    candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
-  };
-  return data.candidates[0]?.content?.parts[0]?.text ?? "";
+  throw new ConvexError("Gemini API failed after retries");
 }
 
 /** Generate a structured learning plan for a user */
@@ -91,8 +104,8 @@ estimated_time is in minutes (10 or 15).
   },
 });
 
-/** Generate a quiz question for a topic */
-export const generateQuizQuestion = action({
+/** Generate lesson: material + quiz in ONE API call to save quota */
+export const generateLesson = action({
   args: {
     topic: v.string(),
     level: v.string(),
@@ -101,63 +114,62 @@ export const generateQuizQuestion = action({
     _ctx,
     args
   ): Promise<{
-    question: string;
-    choices: string[];
-    correct_index: number;
-    explanation: string;
+    material: {
+      explanation: string;
+      code_example: string;
+      key_points: string[];
+    };
+    questions: Array<{
+      question: string;
+      choices: string[];
+      correct_index: number;
+      explanation: string;
+    }>;
   }> => {
     const prompt = `
-You are a Python quiz generator.
+You are a Python tutor. Generate a complete lesson for the topic below.
 Topic: "${args.topic}"
 Level: ${args.level}
-Create ONE multiple choice question about Python programming for this topic.
+
 Respond ONLY with valid JSON, no markdown:
 {
-  "question": "Question text here?",
-  "choices": ["Option A", "Option B", "Option C", "Option D"],
-  "correct_index": 0,
-  "explanation": "Brief explanation of why the answer is correct."
+  "material": {
+    "explanation": "Clear 5-6 sentence explanation of the topic. Cover what it is, why it matters, and how to use it in Python.",
+    "code_example": "# A practical Python code example with comments\\nprint('hello')",
+    "key_points": ["Point 1", "Point 2", "Point 3", "Point 4"]
+  },
+  "questions": [
+    {
+      "question": "Question text?",
+      "choices": ["A", "B", "C", "D"],
+      "correct_index": 0,
+      "explanation": "Why this is correct."
+    }
+  ]
 }
-correct_index is 0-based index of the correct choice.
+
+RULES:
+- explanation: 5-6 clear sentences.
+- code_example: 1 practical example with comments.
+- key_points: exactly 4 points.
+- questions: exactly 3 multiple choice questions, easy to hard, 4 choices each.
+- correct_index is 0-based.
 `;
 
     const raw = await callGemini(prompt);
     const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("Invalid quiz response format");
-    return JSON.parse(match[0]);
-  },
-});
-
-/** Generate learning material for a topic */
-export const generateLearningMaterial = action({
-  args: {
-    topic: v.string(),
-    level: v.string(),
-  },
-  handler: async (
-    _ctx,
-    args
-  ): Promise<{
-    explanation: string;
-    code_example: string;
-    key_points: string[];
-  }> => {
-    const prompt = `
-You are a Python tutor.
-Topic: "${args.topic}"
-Level: ${args.level}
-Generate learning material. Respond ONLY with valid JSON, no markdown:
-{
-  "explanation": "Clear 3-4 sentence explanation suitable for the level",
-  "code_example": "# Python code example\\nprint('example')",
-  "key_points": ["Point 1", "Point 2", "Point 3"]
-}
-`;
-
-    const raw = await callGemini(prompt);
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("Invalid material response");
-    return JSON.parse(match[0]);
+    if (!match) throw new Error("Invalid lesson response format");
+    const parsed = JSON.parse(match[0]);
+    
+    // Ensure structure
+    return {
+      material: parsed.material ?? {
+        explanation: parsed.explanation ?? "",
+        code_example: parsed.code_example ?? "",
+        key_points: parsed.key_points ?? [],
+      },
+      questions: parsed.questions ?? [],
+    };
   },
 });
 

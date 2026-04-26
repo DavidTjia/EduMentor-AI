@@ -44,14 +44,16 @@ export default function LearningScreen() {
   const [aiModalVisible, setAiModalVisible] = useState(false);
   const [phase, setPhase] = useState<Phase>("material");
   const [material, setMaterial] = useState<LearningMaterial | null>(null);
-  const [quiz, setQuiz] = useState<QuizQuestion | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [showExplanation, setShowExplanation] = useState(false);
   const [loadingMaterial, setLoadingMaterial] = useState(false);
   const [loadingQuiz, setLoadingQuiz] = useState(false);
   const [sessionId, setSessionId] = useState<Id<"learning_sessions"> | null>(null);
 
-  const generateMaterial = useAction(api.ai.generateLearningMaterial);
-  const generateQuiz = useAction(api.ai.generateQuizQuestion);
+  const generateLesson = useAction(api.ai.generateLesson);
   const startSession = useMutation(api.learningSessions.startSession);
   const endSession = useMutation(api.learningSessions.endSession);
   const saveQuiz = useMutation(api.progress.saveQuizResult);
@@ -80,52 +82,80 @@ export default function LearningScreen() {
 
   useEffect(() => {
     if (!todayTopic || !userId || material) return;
-    loadMaterial(todayTopic.topic);
+    loadLesson(todayTopic.topic);
     startSession({ userId, topic: todayTopic.topic }).then((sid) =>
       setSessionId(sid)
     );
   }, [todayTopic, userId]);
 
-  const loadMaterial = async (topic: string) => {
+  // Single API call loads BOTH material and quiz
+  const loadLesson = async (topic: string) => {
     setLoadingMaterial(true);
     try {
-      const mat = await generateMaterial({ topic, level });
-      setMaterial(mat);
+      const lesson = await generateLesson({ topic, level });
+      setMaterial(lesson.material);
+      setQuizQuestions(lesson.questions);
     } catch (err: any) {
-      const msg = err?.data || "Could not load learning material. Try again.";
+      const msg = err?.data || "Could not load lesson. Try again.";
       Alert.alert("AI Error", msg);
     } finally {
       setLoadingMaterial(false);
     }
   };
 
-  const loadQuiz = async () => {
-    if (!todayTopic) return;
-    setLoadingQuiz(true);
+  const startQuiz = () => {
     setPhase("quiz");
     setSelected(null);
-    setQuiz(null);
-    try {
-      const q = await generateQuiz({ topic: todayTopic.topic, level });
-      setQuiz(q);
-    } catch (err: any) {
-      const msg = err?.data || "Could not generate quiz. Try again.";
-      Alert.alert("AI Error", msg);
-      setPhase("material");
-    } finally {
-      setLoadingQuiz(false);
+    setCurrentQuestionIndex(0);
+    setCorrectCount(0);
+    setShowExplanation(false);
+    // Quiz questions already loaded — no extra API call needed!
+    if (quizQuestions.length === 0 && todayTopic) {
+      // Fallback: reload lesson if somehow quiz is empty
+      setLoadingQuiz(true);
+      generateLesson({ topic: todayTopic.topic, level })
+        .then((lesson) => {
+          setQuizQuestions(lesson.questions);
+        })
+        .catch(() => {
+          Alert.alert("Error", "Could not load quiz.");
+          setPhase("material");
+        })
+        .finally(() => setLoadingQuiz(false));
     }
   };
 
-  const handleSubmit = async () => {
-    if (selected === null || !quiz || !userId || !todayTopic) return;
-    const isPassed = selected === quiz.correct_index;
-    const score = isPassed ? 100 : 0;
+  const currentQuiz = quizQuestions[currentQuestionIndex] ?? null;
+  const totalQuestions = quizQuestions.length;
 
-    await saveQuiz({ userId, topic: todayTopic.topic, score, is_passed: isPassed });
-    if (sessionId) await endSession({ sessionId, score, completed: isPassed });
-    if (isPassed) await updateStreak({ userId });
-    setPhase("result");
+  const handleSubmit = async () => {
+    if (selected === null || !currentQuiz || !userId || !todayTopic) return;
+    const isCorrect = selected === currentQuiz.correct_index;
+    if (isCorrect) setCorrectCount((c) => c + 1);
+    setShowExplanation(true);
+  };
+
+  const handleNextQuestion = async () => {
+    if (!userId || !todayTopic) return;
+    const nextIndex = currentQuestionIndex + 1;
+
+    if (nextIndex < totalQuestions) {
+      // Move to next question
+      setCurrentQuestionIndex(nextIndex);
+      setSelected(null);
+      setShowExplanation(false);
+    } else {
+      // Quiz finished — calculate final score
+      const finalCorrect = correctCount + (selected === currentQuiz!.correct_index ? 1 : 0);
+      // Re-count since handleSubmit might not have run for the last Q
+      const finalScore = Math.round((finalCorrect / totalQuestions) * 100);
+      const isPassed = finalScore >= 60;
+
+      await saveQuiz({ userId, topic: todayTopic.topic, score: finalScore, is_passed: isPassed });
+      if (sessionId) await endSession({ sessionId, score: finalScore, completed: isPassed });
+      if (isPassed) await updateStreak({ userId });
+      setPhase("result");
+    }
   };
 
   const handleNextTopic = async () => {
@@ -133,8 +163,11 @@ export default function LearningScreen() {
     await markComplete({ planId: todayTopic._id });
     setPhase("material");
     setMaterial(null);
-    setQuiz(null);
+    setQuizQuestions([]);
+    setCurrentQuestionIndex(0);
+    setCorrectCount(0);
     setSelected(null);
+    setShowExplanation(false);
     setSessionId(null);
   };
 
@@ -231,7 +264,7 @@ export default function LearningScreen() {
                   </ScrollView>
                 </Card>
 
-                <GradientButton label="Take the Quiz →" onPress={loadQuiz} style={styles.quizBtn} />
+                <GradientButton label="Take the Quiz →" onPress={startQuiz} style={styles.quizBtn} />
               </>
             ) : null}
           </>
@@ -243,34 +276,65 @@ export default function LearningScreen() {
             {loadingQuiz ? (
               <View style={styles.loadingCard}>
                 <ActivityIndicator color={colors.primary} />
-                <Text style={styles.loadingText}>Generating quiz...</Text>
+                <Text style={styles.loadingText}>Generating quiz ({totalQuestions > 0 ? `${totalQuestions} questions` : '...'})...</Text>
               </View>
-            ) : quiz ? (
+            ) : currentQuiz ? (
               <>
+                {/* Progress indicator */}
+                <View style={styles.quizProgressRow}>
+                  <Text style={styles.quizProgressText}>
+                    Question {currentQuestionIndex + 1} of {totalQuestions}
+                  </Text>
+                  <View style={styles.quizProgressBar}>
+                    <View style={[styles.quizProgressFill, { width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%` }]} />
+                  </View>
+                </View>
+
                 <Card style={styles.section}>
                   <View style={styles.quizHeaderRow}>
                     <Text style={styles.quizTag}>Quiz</Text>
                     <Text style={styles.quizTopic}>{topic}</Text>
                   </View>
-                  <Text style={styles.quizQuestion}>{quiz.question}</Text>
+                  <Text style={styles.quizQuestion}>{currentQuiz.question}</Text>
                 </Card>
 
                 <View style={styles.choicesWrap}>
-                  {quiz.choices.map((choice, idx) => {
+                  {currentQuiz.choices.map((choice, idx) => {
                     const isSelected = selected === idx;
+                    const isCorrect = showExplanation && idx === currentQuiz.correct_index;
+                    const isWrong = showExplanation && isSelected && idx !== currentQuiz.correct_index;
                     return (
                       <TouchableOpacity
                         key={idx}
-                        style={[styles.choiceCard, isSelected && styles.choiceSelected]}
-                        onPress={() => setSelected(idx)}
-                        activeOpacity={0.8}
+                        style={[
+                          styles.choiceCard,
+                          isSelected && !showExplanation && styles.choiceSelected,
+                          isCorrect && { borderColor: '#22c55e', backgroundColor: '#f0fdf4' },
+                          isWrong && { borderColor: '#ef4444', backgroundColor: '#fef2f2' },
+                        ]}
+                        onPress={() => !showExplanation && setSelected(idx)}
+                        activeOpacity={showExplanation ? 1 : 0.8}
+                        disabled={showExplanation}
                       >
-                        <View style={[styles.choiceLetter, isSelected && styles.choiceLetterActive]}>
-                          <Text style={[styles.choiceLetterText, isSelected && styles.choiceLetterTextActive]}>
-                            {String.fromCharCode(65 + idx)}
+                        <View style={[
+                          styles.choiceLetter,
+                          isSelected && !showExplanation && styles.choiceLetterActive,
+                          isCorrect && { backgroundColor: '#22c55e', borderColor: '#22c55e' },
+                          isWrong && { backgroundColor: '#ef4444', borderColor: '#ef4444' },
+                        ]}>
+                          <Text style={[
+                            styles.choiceLetterText,
+                            (isSelected || isCorrect || isWrong) && styles.choiceLetterTextActive,
+                          ]}>
+                            {isCorrect ? '✓' : isWrong ? '✗' : String.fromCharCode(65 + idx)}
                           </Text>
                         </View>
-                        <Text style={[styles.choiceText, isSelected && styles.choiceTextActive]}>
+                        <Text style={[
+                          styles.choiceText,
+                          isSelected && !showExplanation && styles.choiceTextActive,
+                          isCorrect && { color: '#16a34a', fontWeight: '600' as const },
+                          isWrong && { color: '#dc2626' },
+                        ]}>
                           {choice}
                         </Text>
                       </TouchableOpacity>
@@ -278,52 +342,79 @@ export default function LearningScreen() {
                   })}
                 </View>
 
-                <GradientButton
-                  label="Submit Answer →"
-                  onPress={handleSubmit}
-                  disabled={selected === null}
-                  style={styles.quizBtn}
-                />
+                {/* Show explanation after submitting */}
+                {showExplanation && (
+                  <Card style={styles.section}>
+                    <Text style={styles.explanationLabel}>📝 Explanation</Text>
+                    <Text style={styles.explanationText}>{currentQuiz.explanation}</Text>
+                  </Card>
+                )}
+
+                {!showExplanation ? (
+                  <GradientButton
+                    label="Submit Answer"
+                    onPress={handleSubmit}
+                    disabled={selected === null}
+                    style={styles.quizBtn}
+                  />
+                ) : (
+                  <GradientButton
+                    label={currentQuestionIndex + 1 < totalQuestions ? `Next Question →` : `See Results →`}
+                    onPress={handleNextQuestion}
+                    style={styles.quizBtn}
+                  />
+                )}
               </>
             ) : null}
           </>
         )}
 
         {/* RESULT PHASE */}
-        {phase === "result" && quiz && (
+        {phase === "result" && (
           <>
-            <View style={styles.resultBanner}>
-              {selected === quiz.correct_index ? (
+            {(() => {
+              const finalCorrect = correctCount;
+              const finalScore = Math.round((finalCorrect / totalQuestions) * 100);
+              const isPassed = finalScore >= 60;
+              return (
                 <>
-                  <Text style={styles.resultEmoji}>🎉</Text>
-                  <Text style={styles.resultTitle}>Correct!</Text>
-                  <Text style={styles.resultScore}>Score: 100 / 100</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.resultEmoji}>💪</Text>
-                  <Text style={styles.resultTitle}>Keep Going!</Text>
-                  <Text style={styles.resultScore}>Score: 0 / 100</Text>
-                </>
-              )}
-            </View>
+                  <View style={styles.resultBanner}>
+                    {isPassed ? (
+                      <>
+                        <Text style={styles.resultEmoji}>🎉</Text>
+                        <Text style={styles.resultTitle}>Great Job!</Text>
+                        <Text style={styles.resultScore}>
+                          {finalCorrect} / {totalQuestions} Correct ({finalScore}%)
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.resultEmoji}>💪</Text>
+                        <Text style={styles.resultTitle}>Keep Practicing!</Text>
+                        <Text style={styles.resultScore}>
+                          {finalCorrect} / {totalQuestions} Correct ({finalScore}%)
+                        </Text>
+                        <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 4 }}>
+                          You need at least 60% to pass. Review the material and try again!
+                        </Text>
+                      </>
+                    )}
+                  </View>
 
-            <Card style={styles.section}>
-              <Text style={styles.explanationLabel}>📝 Explanation</Text>
-              <Text style={styles.explanationText}>{quiz.explanation}</Text>
-              <View style={styles.correctAnswerRow}>
-                <Text style={styles.correctLabel}>Correct answer: </Text>
-                <Text style={styles.correctValue}>{quiz.choices[quiz.correct_index]}</Text>
-              </View>
-            </Card>
-
-            <GradientButton label="Next Topic →" onPress={handleNextTopic} style={styles.quizBtn} />
-            <GradientButton
-              label="Back to Home"
-              onPress={() => router.push("/(tabs)/home")}
-              variant="outline"
-              style={styles.quizBtn}
-            />
+                  {isPassed ? (
+                    <GradientButton label="Next Topic →" onPress={handleNextTopic} style={styles.quizBtn} />
+                  ) : (
+                    <GradientButton label="Retry Quiz" onPress={startQuiz} style={styles.quizBtn} />
+                  )}
+                  <GradientButton
+                    label="Back to Home"
+                    onPress={() => router.push("/(tabs)/home")}
+                    variant="outline"
+                    style={styles.quizBtn}
+                  />
+                </>
+              );
+            })()}
           </>
         )}
 
@@ -379,6 +470,10 @@ function createStyles(c: typeof import("@/constants/theme").AppColors) {
       backgroundColor: c.overlay, padding: 16, lineHeight: 22, minWidth: "100%",
     },
     quizBtn: { marginTop: 4 },
+    quizProgressRow: { gap: 6, marginBottom: 4 },
+    quizProgressText: { fontSize: 13, fontWeight: "600", color: c.textSecondary, textAlign: "center" },
+    quizProgressBar: { height: 6, backgroundColor: c.border, borderRadius: 3, overflow: "hidden" },
+    quizProgressFill: { height: 6, backgroundColor: c.primary, borderRadius: 3 },
     quizHeaderRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
     quizTag: {
       backgroundColor: c.primaryLight, color: c.primary, fontSize: 11, fontWeight: "700",

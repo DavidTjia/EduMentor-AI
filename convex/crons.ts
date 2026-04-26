@@ -4,12 +4,12 @@ import { internal } from "./_generated/api";
 const crons = cronJobs();
 
 /**
- * 🌅 Daily Plan — runs every day at 08:00 WIB (UTC+8 = 00:00 UTC)
+ * 🌙 Daily Plan — runs every day at 19:50 WITA (UTC+8 = 11:50 UTC)
  * Sends today's learning schedule to all Telegram-enabled users.
  */
 crons.cron(
   "send daily learning plan",
-  "0 0 * * *", // 00:00 UTC = 08:00 WIB
+  "50 11 * * *", // 11:50 UTC = 19:50 WITA
   internal.telegram.runMorningDailyPlan,
   {}
 );
