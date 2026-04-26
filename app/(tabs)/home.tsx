@@ -4,8 +4,9 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { AppColors, AppSpacing, Radius } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -20,6 +21,7 @@ import {
 
 export default function HomeScreen() {
   const router = useRouter();
+
   const [userId, setUserId] = useState<Id<"users"> | null>(null);
 
   useEffect(() => {
@@ -42,6 +44,11 @@ export default function HomeScreen() {
     api.progress.getUserProgress,
     userId ? { userId } : "skip"
   );
+  const streakData = useQuery(
+    api.users.getStreak,
+    userId ? { userId } : "skip"
+  );
+  const updateStreak = useMutation(api.users.updateStreak);
 
   const profileImageUrl = useQuery(
     api.users.getProfileImageUrl,
@@ -56,6 +63,16 @@ export default function HomeScreen() {
   const greetingHour = new Date().getHours();
   const greeting =
     greetingHour < 12 ? "Good morning" : greetingHour < 17 ? "Good afternoon" : "Good evening";
+
+  const streakCount = streakData?.streak_count ?? 0;
+  const getStreakBadge = (count: number) => {
+    if (count >= 30) return { label: "💎 Legendary", color: "#9F7AEA" };
+    if (count >= 14) return { label: "🏆 Dedicated", color: "#F6AD55" };
+    if (count >= 7) return { label: "⚡ On Fire", color: "#FC8181" };
+    if (count >= 3) return { label: "🌱 Getting Started", color: "#68D391" };
+    return null;
+  };
+  const streakBadge = getStreakBadge(streakCount);
 
   return (
     <ScrollView
@@ -118,6 +135,38 @@ export default function HomeScreen() {
             />
           </View>
         </View>
+      </LinearGradient>
+
+      {/* Streak Card */}
+      <LinearGradient
+        colors={["#FF9A44", "#FF5858"]}
+        style={styles.streakCard}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.streakRow}>
+          <View style={styles.streakLeft}>
+            <Text style={styles.streakFire}>🔥</Text>
+            <View>
+              <Text style={styles.streakNumber}>{streakCount}</Text>
+              <Text style={styles.streakLabel}>
+                {streakCount === 1 ? "Day Streak" : "Day Streak"}
+              </Text>
+            </View>
+          </View>
+          {streakBadge && (
+            <View style={[styles.streakBadge, { backgroundColor: streakBadge.color + "33" }]}>
+              <Text style={[styles.streakBadgeText, { color: "#fff" }]}>
+                {streakBadge.label}
+              </Text>
+            </View>
+          )}
+        </View>
+        {streakCount === 0 && (
+          <Text style={styles.streakHint}>
+            Complete a quiz today to start your streak!
+          </Text>
+        )}
       </LinearGradient>
 
       {/* Today's Plan Card */}
@@ -330,7 +379,6 @@ const styles = StyleSheet.create({
   },
   todayCard: {
     marginHorizontal: AppSpacing.lg,
-    marginTop: -20,
     gap: 10,
   },
   todayHeader: {
@@ -366,7 +414,6 @@ const styles = StyleSheet.create({
   metaItem: { fontSize: 12, color: AppColors.textMuted, fontWeight: "500" },
   completedCard: {
     marginHorizontal: AppSpacing.lg,
-    marginTop: -20,
     alignItems: "center",
     gap: 8,
   },
@@ -451,5 +498,54 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 13,
     paddingVertical: 8,
+  },
+  // ── Streak Card ───────────────────────────────
+  streakCard: {
+    marginHorizontal: AppSpacing.lg,
+    borderRadius: Radius.lg,
+    padding: AppSpacing.md,
+    shadowColor: "#FF5858",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  streakRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  streakLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  streakFire: {
+    fontSize: 36,
+  },
+  streakNumber: {
+    fontSize: 28,
+    fontWeight: "900",
+    color: "#fff",
+  },
+  streakLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.85)",
+  },
+  streakBadge: {
+    borderRadius: Radius.full,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+  },
+  streakBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  streakHint: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 8,
+    fontStyle: "italic",
   },
 });

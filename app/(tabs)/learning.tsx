@@ -1,22 +1,23 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { useAction, useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { AskAIModal } from "@/components/ui/ask-ai-modal";
 import { Card } from "@/components/ui/card";
 import { GradientButton } from "@/components/ui/gradient-button";
-import { AskAIModal } from "@/components/ui/ask-ai-modal";
 import { AppColors, AppSpacing, Radius } from "@/constants/theme";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type QuizQuestion = {
   question: string;
@@ -35,6 +36,7 @@ type Phase = "material" | "quiz" | "result";
 
 export default function LearningScreen() {
   const router = useRouter();
+
   const [userId, setUserId] = useState<Id<"users"> | null>(null);
   const [level, setLevel] = useState("beginner");
   const [aiModalVisible, setAiModalVisible] = useState(false);
@@ -53,6 +55,7 @@ export default function LearningScreen() {
   const saveQuiz = useMutation(api.progress.saveQuizResult);
   const markComplete = useMutation(api.learningPlans.markTopicComplete);
   const updateUser = useMutation(api.users.updateUserProgress);
+  const updateStreak = useMutation(api.users.updateStreak);
 
   const todayTopic = useQuery(
     api.learningPlans.getTodayTopic,
@@ -121,6 +124,8 @@ export default function LearningScreen() {
 
     await saveQuiz({ userId, topic: todayTopic.topic, score, is_passed: isPassed });
     if (sessionId) await endSession({ sessionId, score, completed: isPassed });
+    // Update streak when quiz is passed
+    if (isPassed) await updateStreak({ userId });
     setPhase("result");
   };
 
@@ -153,7 +158,7 @@ export default function LearningScreen() {
         <Text style={{ fontSize: 60 }}>🏆</Text>
         <Text style={{ fontSize: 24, fontWeight: "800", color: AppColors.primary, marginTop: 10 }}>All Caught Up!</Text>
         <Text style={{ fontSize: 14, color: AppColors.textSecondary, textAlign: "center", paddingHorizontal: 30, marginTop: 8 }}>
-          You have successfully completed all the topics in your current learning journey. 
+          You have successfully completed all the topics in your current learning journey.
           Check your Progress tab to review your stats!
         </Text>
         <GradientButton

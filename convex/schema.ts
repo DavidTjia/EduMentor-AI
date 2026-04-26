@@ -18,6 +18,10 @@ export default defineSchema({
 
     weak_topics: v.optional(v.array(v.string())),
 
+    // 🔥 LEARNING STREAK
+    streak_count: v.optional(v.number()),         // Consecutive days of learning
+    last_streak_date: v.optional(v.string()),     // "YYYY-MM-DD" last streak update
+
     // 📱 TELEGRAM AI COACH
     telegram_enabled: v.optional(v.boolean()),
     telegram_chat_id: v.optional(v.string()),

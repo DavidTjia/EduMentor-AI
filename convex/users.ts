@@ -246,3 +246,71 @@ export const removeProfileImage = mutation({
     await ctx.db.patch(args.userId, { profile_image: undefined });
   },
 });
+
+// ─── LEARNING STREAK ─────────────────────────────────────────────────────────
+
+/** Helper: get today's date as YYYY-MM-DD string */
+function getTodayDateString(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Helper: get yesterday's date as YYYY-MM-DD string */
+function getYesterdayDateString(): string {
+  const now = new Date();
+  now.setDate(now.getDate() - 1);
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Update learning streak when user completes a quiz successfully */
+export const updateStreak = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new ConvexError("User not found");
+
+    const today = getTodayDateString();
+    const yesterday = getYesterdayDateString();
+    const lastDate = user.last_streak_date;
+    const currentStreak = user.streak_count ?? 0;
+
+    // Already counted today — skip
+    if (lastDate === today) return currentStreak;
+
+    let newStreak: number;
+    if (lastDate === yesterday) {
+      // Consecutive day — increment
+      newStreak = currentStreak + 1;
+    } else {
+      // Streak broken — reset to 1
+      newStreak = 1;
+    }
+
+    await ctx.db.patch(args.userId, {
+      streak_count: newStreak,
+      last_streak_date: today,
+    });
+
+    return newStreak;
+  },
+});
+
+/** Get streak info for a user */
+export const getStreak = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) return { streak_count: 0, last_streak_date: null };
+    return {
+      streak_count: user.streak_count ?? 0,
+      last_streak_date: user.last_streak_date ?? null,
+    };
+  },
+});
+
